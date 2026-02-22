@@ -1,0 +1,31 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-dahi_kineshbot}
+      POSTGRES_USER: ${POSTGRES_USER:-dahi}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-dahi_password}
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-dahi} -d ${POSTGRES_DB:-dahi_kineshbot}"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+
+  bot:
+    build: .
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-dahi}:${POSTGRES_PASSWORD:-dahi_password}@db:5432/${POSTGRES_DB:-dahi_kineshbot}
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - ./pics:/app/pics
+    restart: unless-stopped
+
+volumes:
+  pg_data:
