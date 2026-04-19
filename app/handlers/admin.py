@@ -66,6 +66,8 @@ async def _save_quote_card(bot: Bot, repo: Repository, data: dict) -> None:
 
     dst = pics_dir / f"{image_number}.png"
     tg_file = await bot.get_file(file_id)
+    if not tg_file.file_path:
+        raise RuntimeError("Telegram file path is empty")
     await bot.download_file(tg_file.file_path, destination=dst)
 
     await repo.upsert_quote_image(image_number=image_number, file_path=f"pics/{image_number}.png", author_id=author_id)
@@ -150,16 +152,28 @@ async def admin_author_name_step(message: Message, state: FSMContext, repo: Repo
     )
 
 
-@router.callback_query(AddQuoteStates.waiting_create_author_confirm, F.data.in_({"admin_create_author:yes", "admin_create_author:no"}))
+@router.callback_query(
+    AddQuoteStates.waiting_create_author_confirm,
+    F.data.in_({"admin_create_author:yes", "admin_create_author:no"}),
+)
 async def admin_create_author_confirm(callback: CallbackQuery, state: FSMContext) -> None:
     await callback.answer()
-    if callback.data.endswith(":no"):
+    message = callback.message
+    if not isinstance(message, Message):
+        return
+
+    data = callback.data
+    if not data:
+        await message.answer("Некорректный запрос.")
+        return
+
+    if data.endswith(":no"):
         await state.clear()
-        await callback.message.answer("Операция отменена.")
+        await message.answer("Операция отменена.")
         return
 
     await state.set_state(AddQuoteStates.waiting_bio_short)
-    await callback.message.answer("Шаг 4/7: отправьте `bio_short`.")
+    await message.answer("Шаг 4/7: отправьте `bio_short`.")
 
 
 @router.message(AddQuoteStates.waiting_bio_short)
@@ -234,21 +248,29 @@ async def admin_materials_step(message: Message, state: FSMContext) -> None:
 @router.callback_query(AddQuoteStates.waiting_save_confirm, F.data.in_({"admin_save_quote:yes", "admin_save_quote:no"}))
 async def admin_save_confirm(callback: CallbackQuery, state: FSMContext, repo: Repository, bot: Bot) -> None:
     await callback.answer()
-
-    if callback.data.endswith(":no"):
-        await state.clear()
-        await callback.message.answer("Операция отменена.")
+    message = callback.message
+    if not isinstance(message, Message):
         return
 
-    data = await state.get_data()
+    data = callback.data
+    if not data:
+        await message.answer("Некорректный запрос.")
+        return
 
-    author_id = data.get("author_id")
+    if data.endswith(":no"):
+        await state.clear()
+        await message.answer("Операция отменена.")
+        return
+
+    state_data = await state.get_data()
+
+    author_id = state_data.get("author_id")
     if author_id is None:
-        author_name = data["author_name"]
-        bio_short = data["bio_short"]
-        bio_full = data["bio_full"]
+        author_name = state_data["author_name"]
+        bio_short = state_data["bio_short"]
+        bio_full = state_data["bio_full"]
 
-        source_url = data.get("source_url")
+        source_url = state_data.get("source_url")
         author_id = await repo.create_author(
             author_name,
             bio_short=bio_short,
@@ -256,13 +278,13 @@ async def admin_save_confirm(callback: CallbackQuery, state: FSMContext, repo: R
             source_label="Чыганак",
             source_url=source_url,
         )
-        await repo.add_resources(author_id, "books", data.get("books", []))
-        await repo.add_resources(author_id, "audio", data.get("audio", []))
-        await repo.add_resources(author_id, "materials", data.get("materials", []))
+        await repo.add_resources(author_id, "books", state_data.get("books", []))
+        await repo.add_resources(author_id, "audio", state_data.get("audio", []))
+        await repo.add_resources(author_id, "materials", state_data.get("materials", []))
 
     await state.update_data(author_id=author_id)
 
     await _save_quote_card(bot, repo, await state.get_data())
     await state.clear()
 
-    await callback.message.answer("Карточка и данные автора успешно сохранены.")
+    await message.answer("Карточка и данные автора успешно сохранены.")

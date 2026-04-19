@@ -18,12 +18,17 @@ async def _build_actions_keyboard(repo: Repository, author_id: int):
 
 async def _send_random_quote(target: Message | CallbackQuery, repo: Repository) -> None:
     quote = await repo.get_random_quote()
+    if isinstance(target, Message):
+        message = target
+    else:
+        maybe_message = target.message
+        if not isinstance(maybe_message, Message):
+            return
+        message = maybe_message
+
     if quote is None:
         text = "Цитаты пока не загружены в БД."
-        if isinstance(target, Message):
-            await target.answer(text)
-        else:
-            await target.message.answer(text)
+        await message.answer(text)
         return
 
     file_path = Path(quote.file_path)
@@ -32,21 +37,14 @@ async def _send_random_quote(target: Message | CallbackQuery, repo: Repository) 
 
     if not file_path.exists():
         missing = f"Файл не найден: {quote.file_path}"
-        if isinstance(target, Message):
-            await target.answer(missing)
-        else:
-            await target.message.answer(missing)
+        await message.answer(missing)
         return
 
     caption = f"Цитата #{quote.image_number}\nАвтор: {quote.author_name}"
     keyboard = await _build_actions_keyboard(repo, quote.author_id)
 
-    if isinstance(target, Message):
-        await target.answer_photo(photo=FSInputFile(str(file_path)), caption=caption)
-        await target.answer("Выберите действие:", reply_markup=keyboard)
-    else:
-        await target.message.answer_photo(photo=FSInputFile(str(file_path)), caption=caption)
-        await target.message.answer("Выберите действие:", reply_markup=keyboard)
+    await message.answer_photo(photo=FSInputFile(str(file_path)), caption=caption)
+    await message.answer("Выберите действие:", reply_markup=keyboard)
 
 
 @router.message(F.text == "/start")
@@ -81,12 +79,26 @@ async def quote_next_handler(callback: CallbackQuery, repo: Repository) -> None:
 @router.callback_query(F.data.regexp(r"^author:(bio|books|audio|materials):\d+$"))
 async def author_actions_handler(callback: CallbackQuery, repo: Repository) -> None:
     await callback.answer()
-    action, author_id_str = callback.data.split(":")[1:]
+    message = callback.message
+    if not isinstance(message, Message):
+        return
+
+    data = callback.data
+    if not data:
+        await message.answer("Некорректный запрос.")
+        return
+
+    parts = data.split(":")
+    if len(parts) != 3:
+        await message.answer("Некорректный формат запроса.")
+        return
+
+    action, author_id_str = parts[1:]
     author_id = int(author_id_str)
 
     author = await repo.get_author(author_id)
     if author is None:
-        await callback.message.answer("Автор не найден в БД.")
+        await message.answer("Автор не найден в БД.")
         return
 
     if action == "bio":
@@ -94,7 +106,7 @@ async def author_actions_handler(callback: CallbackQuery, repo: Repository) -> N
         if author.source_url:
             source_line = f"{author.source_label}: {author.source_url}"
         keyboard = await _build_actions_keyboard(repo, author_id)
-        await callback.message.answer(
+        await message.answer(
             f"{author.display_name}\n\n{author.bio_full}\n\n{source_line}",
             reply_markup=keyboard,
         )
@@ -103,7 +115,7 @@ async def author_actions_handler(callback: CallbackQuery, repo: Repository) -> N
     if action == "books":
         items = await repo.get_resources(author_id, "books")
         keyboard = await _build_actions_keyboard(repo, author_id)
-        await callback.message.answer(
+        await message.answer(
             format_resources(items, "📘"),
             reply_markup=keyboard,
         )
@@ -112,7 +124,7 @@ async def author_actions_handler(callback: CallbackQuery, repo: Repository) -> N
     if action == "audio":
         items = await repo.get_resources(author_id, "audio")
         keyboard = await _build_actions_keyboard(repo, author_id)
-        await callback.message.answer(
+        await message.answer(
             format_resources(items, "🎧"),
             reply_markup=keyboard,
         )
@@ -121,7 +133,7 @@ async def author_actions_handler(callback: CallbackQuery, repo: Repository) -> N
     if action == "materials":
         items = await repo.get_resources(author_id, "materials")
         keyboard = await _build_actions_keyboard(repo, author_id)
-        await callback.message.answer(
+        await message.answer(
             format_resources(items, "📎"),
             reply_markup=keyboard,
         )
