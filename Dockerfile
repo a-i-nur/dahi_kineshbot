@@ -5,8 +5,8 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /app
 
-RUN apt-get update \
-    && apt-get install -y --no-install-recommends postgresql-client \
+RUN apt-get -o Acquire::ForceIPv4=true -o Acquire::Retries=5 update \
+    && apt-get -o Acquire::ForceIPv4=true -o Acquire::Retries=5 install -y --no-install-recommends postgresql-client \
     && rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt ./
