@@ -30,7 +30,7 @@ async def main() -> None:
         while True:
             session = AiohttpSession(
                 proxy=settings.telegram_proxy,
-                timeout=aiohttp.ClientTimeout(total=settings.telegram_request_timeout),
+                timeout=settings.telegram_request_timeout,
             )
             bot = Bot(token=settings.bot_token, default=DefaultBotProperties(parse_mode=ParseMode.HTML), session=session)
 
