@@ -138,6 +138,8 @@ BOT_IMAGE=aynurakhmetov/dahi_kineshbot:v1.2.3 docker compose up -d
 
 Because `restart: unless-stopped` is enabled, services auto-restart after reboot.
 
+Deployment checklist: see [DEPLOY.md](DEPLOY.md) for the short server setup and update flow.
+
 ## How to find and test the bot in Telegram
 
 1. Open Telegram.
