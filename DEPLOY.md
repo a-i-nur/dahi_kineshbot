@@ -90,6 +90,23 @@ Suggested cron example:
 0 2 * * * cd /opt/dahi_kineshbot && bash scripts/backup_postgres.sh >/tmp/dahi_backup.log 2>&1
 ```
 
+## PostgreSQL restore
+
+Use this only when you need to recover from a dump.
+
+1. Pick a backup file from `backups/`.
+2. Run restore from project root:
+   ```bash
+   bash scripts/restore_postgres.sh backups/dahi_kineshbot-YYYYMMDD-HHMMSS.sql.gz
+   ```
+3. Confirm by typing `RESTORE`.
+
+Notes:
+
+- The restore script creates a safety backup first.
+- It then drops and recreates schema `public` and loads the dump.
+- For non-interactive usage, pass `--yes` as the second argument.
+
 ## Notes
 
 - `BOT_IMAGE` can override the default Docker Hub image tag.
