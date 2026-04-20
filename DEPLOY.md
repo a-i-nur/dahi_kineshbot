@@ -41,6 +41,28 @@ Short, practical checklist for the current production setup.
    docker compose logs -f bot
    ```
 
+## GitHub Actions deploy
+
+This repository has a workflow in [.github/workflows/deploy.yml](.github/workflows/deploy.yml) that:
+
+1. Builds the Docker image on every push to `master`.
+2. Pushes the image to Docker Hub.
+3. Connects to the VPS over SSH and runs `git pull && docker compose pull && docker compose up -d`.
+
+Required GitHub Secrets:
+
+- `DOCKERHUB_USERNAME`
+- `DOCKERHUB_TOKEN`
+- `SSH_HOST`
+- `SSH_USER`
+- `SSH_KEY`
+
+Notes:
+
+- The server must already have the repo cloned in `/opt/dahi_kineshbot`.
+- The server must have Docker and the Compose plugin installed.
+- `SSH_KEY` should be the private key that matches the public key added to the server's `deploy` user.
+
 ## Quick checks
 
 1. `docker compose ps`
