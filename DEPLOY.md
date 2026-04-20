@@ -47,6 +47,27 @@ Short, practical checklist for the current production setup.
 2. `docker compose logs -f bot`
 3. In Telegram, send `/start` and then `Киңәш кирәк`
 
+## Minimal PostgreSQL backup
+
+The simplest backup is a daily `pg_dump` from the host into a local `backups/` directory.
+
+1. Create the backup directory on the server:
+   ```bash
+   mkdir -p backups
+   ```
+2. Run the backup script from the project root:
+   ```bash
+   bash scripts/backup_postgres.sh
+   ```
+3. The dump will be saved as a compressed file like `backups/dahi_kineshbot-20260421-020000.sql.gz`.
+4. Keep at least several recent files and delete old ones manually or with `find`.
+
+Suggested cron example:
+
+```cron
+0 2 * * * cd /opt/dahi_kineshbot && bash scripts/backup_postgres.sh >/tmp/dahi_backup.log 2>&1
+```
+
 ## Notes
 
 - `BOT_IMAGE` can override the default Docker Hub image tag.
