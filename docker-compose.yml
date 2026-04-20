@@ -15,7 +15,7 @@ services:
     restart: unless-stopped
 
   bot:
-    build: .
+    image: ${BOT_IMAGE:-aynurakhmetov/dahi_kineshbot:latest}
     env_file:
       - .env
     environment:

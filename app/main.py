@@ -6,6 +6,7 @@ from aiogram import Bot, Dispatcher
 from aiogram.client.default import DefaultBotProperties
 from aiogram.client.session.aiohttp import AiohttpSession
 from aiogram.enums import ParseMode
+from aiogram.exceptions import TelegramNetworkError
 
 from app.config import load_settings
 from app.db import close_pool, init_pool
@@ -19,9 +20,6 @@ async def main() -> None:
     settings = load_settings()
     pool = await init_pool(settings.database_url)
     repo = Repository(pool)
-
-    session = AiohttpSession(timeout=aiohttp.ClientTimeout(total=60))
-    bot = Bot(token=settings.bot_token, default=DefaultBotProperties(parse_mode=ParseMode.HTML), session=session)
     dp = Dispatcher()
     dp["repo"] = repo
 
@@ -29,9 +27,26 @@ async def main() -> None:
     dp.include_router(user.router)
 
     try:
-        await dp.start_polling(bot)
+        while True:
+            session = AiohttpSession(
+                proxy=settings.telegram_proxy,
+                timeout=aiohttp.ClientTimeout(total=settings.telegram_request_timeout),
+            )
+            bot = Bot(token=settings.bot_token, default=DefaultBotProperties(parse_mode=ParseMode.HTML), session=session)
+
+            try:
+                await dp.start_polling(bot)
+                break
+            except (TelegramNetworkError, asyncio.TimeoutError, aiohttp.ClientError) as exc:
+                logging.warning(
+                    "Telegram API unreachable (%s). Retrying in %s seconds...",
+                    exc,
+                    settings.telegram_retry_delay,
+                )
+                await asyncio.sleep(settings.telegram_retry_delay)
+            finally:
+                await bot.session.close()
     finally:
-        await bot.session.close()
         await close_pool()
 
 

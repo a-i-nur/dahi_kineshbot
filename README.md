@@ -102,7 +102,8 @@ python -m app.main
 ## Docker run
 
 ```bash
-docker compose up --build -d
+docker compose pull
+docker compose up -d
 docker compose logs -f bot
 ```
 
@@ -125,8 +126,15 @@ Recommended path:
 2. Install Docker + Compose plugin.
 3. Copy project to server.
 4. Create `.env` with real token and DB settings.
-5. Run `docker compose up --build -d`.
+5. Run `docker compose pull && docker compose up -d`.
 6. Check `docker compose logs -f bot`.
+
+By default, the bot service pulls image `aynurakhmetov/dahi_kineshbot:latest`.
+To use another tag, set `BOT_IMAGE`, for example:
+
+```bash
+BOT_IMAGE=aynurakhmetov/dahi_kineshbot:v1.2.3 docker compose up -d
+```
 
 Because `restart: unless-stopped` is enabled, services auto-restart after reboot.
 
