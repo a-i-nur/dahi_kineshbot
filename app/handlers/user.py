@@ -44,14 +44,16 @@ async def _send_random_quote(target: Message | CallbackQuery, repo: Repository) 
     keyboard = await _build_actions_keyboard(repo, quote.author_id)
 
     await message.answer_photo(photo=FSInputFile(str(file_path)), caption=caption)
-    await message.answer("Выберите действие:", reply_markup=keyboard)
+    await message.answer("Сайлагыз:", reply_markup=keyboard)
 
 
 @router.message(F.text == "/start")
 async def start_handler(message: Message) -> None:
-    await message.answer("Сәлам! Это бот с цитатами татарских писателей.")
     await message.answer(
-        "Нажмите кнопку ниже, чтобы получить случайную цитату.",
+        "Сәлам! Биредә үзеңә көндәләк киңәш алу һәм даһи язучыларыбыз белән якынрак танышу мөмкинлеге бар."
+    )
+    await message.answer(
+        "Очраклы киңәшне алыр өчен, төймәгә бас ⬇️",
         reply_markup=main_reply_keyboard(),
     )
     await message.answer(
