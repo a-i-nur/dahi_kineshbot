@@ -50,14 +50,11 @@ async def _send_random_quote(target: Message | CallbackQuery, repo: Repository) 
 @router.message(F.text == "/start")
 async def start_handler(message: Message) -> None:
     await message.answer(
-        "Сәлам! Биредә үзеңә көндәләк киңәш алу һәм даһи язучыларыбыз белән якынрак танышу мөмкинлеге бар."
-    )
-    await message.answer(
-        "Очраклы киңәшне алыр өчен, төймәгә бас ⬇️",
+        "Сәлам! Биредә үзеңә көндәләк киңәш алу һәм даһи язучыларыбыз белән якынрак танышу мөмкинлеге бар.",
         reply_markup=main_reply_keyboard(),
     )
     await message.answer(
-        "Или нажмите кнопку в этом сообщении:",
+        "Очраклы киңәшне алыр өчен, төймәгә бас ⬇️",
         reply_markup=start_inline_keyboard(),
     )
 
